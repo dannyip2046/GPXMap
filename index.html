@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/css/ol.css" -->
@@ -31,32 +32,118 @@
 
   <script type="module">
     import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
+    const auth = 'Z2hwX1BMalJCb2w0dzE5Sm1SQVAxaGdQejBUVDhsamd2VjF3NGRFYw==';
+    const owner = "ZGFubnlpcDIwNDY=";
+    const repo = "R1BYTWFw";
+    const path = "ZGF0YQ==";
 
     getDirGitHubApi();
 
     async function getDirGitHubApi() {
 
       const octokit = new Octokit({
-        auth: atob('Z2hwX3pNdDJwOHNFQnc2TTNZVWVLbzlWRDlBSnlHSUt6ajNZdkI4dQ==')
+        auth: atob(auth)
       })
 
       const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-        owner: 'dannyip2046',
-        repo: 'GPXMap',
-        path: 'data'
+        owner: atob(owner),
+        repo: atob(repo),
+        path: atob(path)
       })
 
-      //const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
-      const data = await response.json();
-
-      for (i = 0; i < data.length; i++) {
-        fileList.push(data[i].name);
+      for (var i = 0; i < response.data.length; i++) {
+        fileList.push(response.data[i].name);
       }
 
-      console.log("data", data);
-      console.log("fileList", fileList);
+      localForageHandlerGit();
+    }
 
-      localForageHandler();
+    function localForageHandlerGit() {
+      //1 get db all key and file list, if file list not exist key, delet key
+      //2 if key exist get item to draw line, else get read file data and setitem and getitem draw line
+      localforage.keys().then(function (keys) {
+        // An array of all the key names.
+
+        //delete key when file is deleted
+        for (var i = 0; i < keys.length; i++) {
+          var file = fileList.find(element => element == keys[i]);
+          if (file == null) {
+            localforage.removeItem(keys[i]).then(function () {
+            }).catch(function (err) {
+              console.log(err);
+            });
+          }
+        }
+
+        //get values form db
+        for (var i = 0; i < fileList.length; i++) {
+          var key = keys.find(element => element == fileList[i]);
+
+          if (key != null) {
+            localforage.getItem(key, function (err, value) {
+              drawLine(value.points, value.type);
+            });
+          } else {
+            //if key not exist, read file 
+            //readGPXFileLatLonXMLHttpRequest(fileList[i]);
+            readGPXFileLatLonByGitHubApi(fileList[i]);
+          }
+        }
+
+      }).catch(function (err) {
+        console.log(err);
+      });
+    }
+
+    async function readGPXFileLatLonByGitHubApi(fileName) {
+
+      const octokit = new Octokit({
+        auth: atob(auth)
+      })
+
+      const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: atob(owner),
+        repo: atob(repo),
+        path: atob(path) + '/' + fileName
+      })
+
+      const context = response.data.content;
+
+      var download_url = await fetch(response.data.download_url);
+
+      download_url.text().then(
+        (txt) => {
+
+          var gpx = new gpxParser(); //Create gpxParser Object
+          gpx.parse(txt); //parse gpx file from string data
+          console.log(gpx);
+
+          //var totalDistance = gpx.tracks[0].distance.total;
+          //let geoJSON = gpx.toGeoJSON();
+
+          var dbValues = { name: '', type: '', time: '', totalDistance: 0, points: [] };
+
+          dbValues.name = gpx.tracks[0].name;
+          dbValues.type = gpx.tracks[0].type;
+          dbValues.time = gpx.metadata.time;
+          dbValues.totalDistance = gpx.tracks[0].distance.total;
+
+          for (var i = 0; i < gpx.tracks[0].points.length; i++) {
+            var lonlat = [gpx.tracks[0].points[i].lon, gpx.tracks[0].points[i].lat];
+            dbValues.points.push(lonlat);
+          }
+
+          localforage.setItem(fileName, dbValues, function (err) {
+            localforage.getItem(fileName).then(function (value) {
+              drawLine(value.points, value.type);
+            }).catch(function (err) {
+              console.log(err);
+            });
+          });
+
+        }
+      )
+
     }
 
   </script>
@@ -68,12 +155,8 @@
     let map;
     let view;
     let fileList = [];
-    let gitHubUserName = "dannyip2046";
-    let gpxDir = "data";
-    let gitHubGetRepositoryContentApi = 'https://api.github.com/repos/' + gitHubUserName + '/GPXMap/contents/';
 
     onloadMap();
-    getDirGitHubApi();
     //getDirXMLHttpRequestAsync("./data");
 
     function onloadMap() {
@@ -93,31 +176,6 @@
       });
 
     };
-
-    async function getDirGitHubApi() {
-
-      const octokit = new Octokit({
-        auth: bota('Z2hwX3pNdDJwOHNFQnc2TTNZVWVLbzlWRDlBSnlHSUt6ajNZdkI4dQ==')
-      })
-
-      const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-        owner: 'dannyip2046',
-        repo: 'REPO',
-        path: 'data'
-      })
-
-      //const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
-      const data = await response.json();
-
-      for (i = 0; i < data.length; i++) {
-        fileList.push(data[i].name);
-      }
-
-      console.log("data", data);
-      console.log("fileList", fileList);
-
-      localForageHandler();
-    }
 
     function getDirXMLHttpRequestAsync(dir) {
       var xhttp = new XMLHttpRequest();
@@ -149,16 +207,6 @@
 
       //use db to handle data
       localForageHandler();
-    }
-
-    async function readGPXFileLatLonByGitHubApi(fileName) {
-      const response = await fetch(gitHubGetRepositoryContentApi + gpxDir + "/" + fileName);
-      const data = await response.json();
-
-      const context = data.content;
-
-      console.log("context", bota(context));
-      console.log("context", atob(context));
     }
 
     function readGPXFileLatLonXMLHttpRequest(fileName) {
@@ -272,8 +320,7 @@
             });
           } else {
             //if key not exist, read file 
-            //readGPXFileLatLonXMLHttpRequest(fileList[i]);
-            readGPXFileLatLonByGitHubApi(fileList[i]);
+            readGPXFileLatLonXMLHttpRequest(fileList[i]);
           }
         }
 
@@ -281,6 +328,7 @@
         console.log(err);
       });
     }
+
 
   </script>
 
