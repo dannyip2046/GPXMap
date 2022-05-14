@@ -22,6 +22,10 @@
   <script src="./js/localforage.js"></script>
   <!-- <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/build/ol.js"></script> -->
   <script src="./js/ol.js"></script>
+  <script type="module">
+    import { Octokit, App } from "https://cdn.skypack.dev/octokit";
+  </script>
+
   <title>GPXMap</title>
 
 </head>
@@ -30,9 +34,7 @@
 
   <div id="map" class="map"></div>
 
-  <script type="module">
-    import { Octokit, App } from "https://cdn.skypack.dev/octokit";
-  </script>
+
 
   <script type="text/javascript">
     let map;
