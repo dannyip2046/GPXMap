@@ -35,9 +35,12 @@
     let map;
     let view;
     let fileList = [];
+    let gitHubUserName = "dannyip2046";
+    let gpxDir = "data";
+    let gitHubGetRepositoryContentApi = 'https://api.github.com/repos/' + gitHubUserName + '/GPXMap/contents/';
 
     onloadMap();
-    getDirGitHubApi("dannyip2046","data");
+    getDirGitHubApi();
     //getDirXMLHttpRequestAsync("./data");
 
     function onloadMap() {
@@ -58,10 +61,18 @@
 
     };
 
-    async function getDirGitHubApi(user,dir){
-      const response = await fetch('https://api.github.com/repos/' + user + '/GPXMap/contents/' + dir);
+    async function getDirGitHubApi(){
+      const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
       const data = await response.json();
+
+      for(i = 0; i < data.length; i++){
+        fileList.push(data[i].name);
+      }
+
       console.log("data",data);
+      console.log("fileList",fileList);
+
+
     }
 
     function getDirXMLHttpRequestAsync(dir) {
@@ -94,6 +105,16 @@
 
       //use db to handle data
       localForageHandler();
+    }
+
+    function readGPXFileLatLonByGitHubApi(fileName){
+      const response = await fetch(gitHubGetRepositoryContentApi + gpxDir + "/" + fileName);
+      const data = await response.json();
+
+      const context = data.content;
+
+      console.log("context",bota(context));
+      console.log("context",atob(context));
     }
 
     function readGPXFileLatLonXMLHttpRequest(fileName) {
@@ -133,7 +154,7 @@
         }
       };
 
-      var url = encodeURI("./css/" + fileName);
+      var url = encodeURI("./data/" + fileName);
       xmlhttp.open("GET", url, true);
       xmlhttp.send();
     }
@@ -207,7 +228,8 @@
             });
           } else {
             //if key not exist, read file 
-            readGPXFileLatLonXMLHttpRequest(fileList[i]);
+            //readGPXFileLatLonXMLHttpRequest(fileList[i]);
+            readGPXFileLatLonByGitHubApi(fileList[i]);
           }
         }
 
