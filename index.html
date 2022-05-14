@@ -59,7 +59,7 @@
     };
 
     async function getDirGitHubApi(user,dir){
-      const response = await fetch('https://api.github.com/repos/user/GPXMap/contents/data');
+      const response = await fetch('https://api.github.com/repos/' + user + '/GPXMap/contents/' + dir);
       const data = await response.json();
       console.log("data",data);
     }
