@@ -62,7 +62,18 @@
     };
 
     async function getDirGitHubApi(){
-      const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
+
+      const octokit = new Octokit({
+  auth: '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'
+})
+
+const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+  owner: 'dannyip2046',
+  repo: 'REPO',
+  path: 'data'
+})
+
+      //const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
       const data = await response.json();
 
       for(i = 0; i < data.length; i++){
