@@ -37,7 +37,7 @@
     async function getDirGitHubApi() {
 
       const octokit = new Octokit({
-        auth: bota('Z2hwX3pNdDJwOHNFQnc2TTNZVWVLbzlWRDlBSnlHSUt6ajNZdkI4dQ==')
+        auth: btoa('Z2hwX3pNdDJwOHNFQnc2TTNZVWVLbzlWRDlBSnlHSUt6ajNZdkI4dQ==')
       })
 
       const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
