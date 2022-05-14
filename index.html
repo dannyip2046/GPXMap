@@ -61,27 +61,27 @@
 
     };
 
-    async function getDirGitHubApi(){
+    async function getDirGitHubApi() {
 
       const octokit = new Octokit({
-  auth: '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'
-})
+        auth: bota('Z2hwX3pNdDJwOHNFQnc2TTNZVWVLbzlWRDlBSnlHSUt6ajNZdkI4dQ==')
+      })
 
-const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-  owner: 'dannyip2046',
-  repo: 'REPO',
-  path: 'data'
-})
+      const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: 'dannyip2046',
+        repo: 'REPO',
+        path: 'data'
+      })
 
       //const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
       const data = await response.json();
 
-      for(i = 0; i < data.length; i++){
+      for (i = 0; i < data.length; i++) {
         fileList.push(data[i].name);
       }
 
-      console.log("data",data);
-      console.log("fileList",fileList);
+      console.log("data", data);
+      console.log("fileList", fileList);
 
       localForageHandler();
     }
@@ -118,14 +118,14 @@ const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path
       localForageHandler();
     }
 
-    async function readGPXFileLatLonByGitHubApi(fileName){
+    async function readGPXFileLatLonByGitHubApi(fileName) {
       const response = await fetch(gitHubGetRepositoryContentApi + gpxDir + "/" + fileName);
       const data = await response.json();
 
       const context = data.content;
 
-      console.log("context",bota(context));
-      console.log("context",atob(context));
+      console.log("context", bota(context));
+      console.log("context", atob(context));
     }
 
     function readGPXFileLatLonXMLHttpRequest(fileName) {
@@ -197,7 +197,7 @@ const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path
       } else if (type == "cycling") {
         tempStroke = strokePurple
       } else if (type == "paddling" || type == "whitewater_rafting_kayaking" || type == "kayaking" || type == "stand_up_paddleboarding") {
-        tempStroke = strokeBlue 
+        tempStroke = strokeBlue
       } else {
         tempStroke = strokeBlack
       }
