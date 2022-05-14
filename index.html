@@ -31,6 +31,32 @@
 
   <script type="module">
     import { Octokit } from "https://cdn.skypack.dev/@octokit/core";
+
+    async function getDirGitHubApi() {
+
+      const octokit = new Octokit({
+        auth: bota('Z2hwX3pNdDJwOHNFQnc2TTNZVWVLbzlWRDlBSnlHSUt6ajNZdkI4dQ==')
+      })
+
+      const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: 'dannyip2046',
+        repo: 'REPO',
+        path: 'data'
+      })
+
+      //const response = await fetch(gitHubGetRepositoryContentApi + gpxDir);
+      const data = await response.json();
+
+      for (i = 0; i < data.length; i++) {
+        fileList.push(data[i].name);
+      }
+
+      console.log("data", data);
+      console.log("fileList", fileList);
+
+      localForageHandler();
+    }
+
   </script>
 
   <div id="map" class="map"></div>
