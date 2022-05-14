@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/css/ol.css" -->
+  <link rel="stylesheet" href="./css/ol.css" type="text/css">
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    .map {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+
+  <script src="./js/GPXParser.js"></script>
+  <script src="./js/localforage.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/build/ol.js"></script> -->
+  <script src="./js/ol.js"></script>
+  <title>GPXMap</title>
+
+</head>
+
+<body>
+
+  <div id="map" class="map"></div>
+
+  <script type="text/javascript">
+
+    let map;
+    let view;
+    let fileList = [];
+
+    onloadMap();
+    getDirXMLHttpRequestAsync("./data");
+
+    function onloadMap() {
+      view = new ol.View({
+        center: ol.proj.fromLonLat([114.13801507869472, 22.410922480877744]),
+        zoom: 11,
+      });
+
+      map = new ol.Map({
+        target: 'map',
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ],
+        view: view
+      });
+
+    };
+
+    function getDirXMLHttpRequestAsync(dir) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          getDirGPXFileName(this);
+        }
+      };
+      xhttp.open("GET", dir, true);
+      xhttp.send();
+    }
+
+    function getDirGPXFileName(xml) {
+      var parser = new DOMParser();
+      var htmlDoc = parser.parseFromString(xml.responseText, 'text/html');
+      //console.log(htmlDoc);
+      //get GPX File Type
+      var preList = htmlDoc.getElementsByTagName('a'), hrefs = [];
+      //console.log(preList);
+
+      //var preList = htmlDoc.getElementsByClassName("icon icon icon-gpx icon-xml");
+      //push all GPX fileName to fileList
+      for (i = 0; i < preList.length; i++) {
+        if (preList[i].outerText.includes('.gpx')) {
+          fileList.push(preList[i].outerText.split('.gpx')[0] + ".gpx");
+        }
+
+      }
+
+      //use db to handle data
+      localForageHandler();
+    }
+
+    function readGPXFileLatLonXMLHttpRequest(fileName) {
+      var txt = '';
+      var xmlhttp = new XMLHttpRequest();
+      xmlhttp.onreadystatechange = function () {
+        if (xmlhttp.status == 200 && xmlhttp.readyState == 4) {
+
+          txt = xmlhttp.responseText;
+          var gpx = new gpxParser(); //Create gpxParser Object
+          gpx.parse(txt); //parse gpx file from string data
+          console.log(gpx);
+
+          //var totalDistance = gpx.tracks[0].distance.total;
+          //let geoJSON = gpx.toGeoJSON();
+
+          var dbValues = { name: '', type: '', time: '', totalDistance: 0, points: [] };
+
+          dbValues.name = gpx.tracks[0].name;
+          dbValues.type = gpx.tracks[0].type;
+          dbValues.time = gpx.metadata.time;
+          dbValues.totalDistance = gpx.tracks[0].distance.total;
+
+          for (var i = 0; i < gpx.tracks[0].points.length; i++) {
+            var lonlat = [gpx.tracks[0].points[i].lon, gpx.tracks[0].points[i].lat];
+            dbValues.points.push(lonlat);
+          }
+
+          localforage.setItem(fileName, dbValues, function (err) {
+            localforage.getItem(fileName).then(function (value) {
+              drawLine(value.points, value.type);
+            }).catch(function (err) {
+              console.log(err);
+            });
+          });
+
+        }
+      };
+
+      var url = encodeURI("./data/" + fileName);
+      xmlhttp.open("GET", url, true);
+      xmlhttp.send();
+    }
+
+    //var points = [[113.99244623410614, 22.462608200595238,], [114.02763681469325, 22.424212666809133,], [114.05235605178859, 22.384854158735187,]];
+    //drawLine(points);
+
+    function drawLine(points, type) {
+      for (var i = 0; i < points.length; i++) {
+        points[i] = ol.proj.transform(points[i], 'EPSG:4326', 'EPSG:3857');
+      }
+
+      var featureLine = new ol.Feature({
+        geometry: new ol.geom.LineString(points)
+      });
+
+      var vectorLine = new ol.source.Vector({});
+      vectorLine.addFeature(featureLine);
+
+      var strokePurple = new ol.style.Stroke({ color: 'rgba(127,0,255,0.5)', width: 5 });
+      var strokeRed = new ol.style.Stroke({ color: 'rgba(255,0,0,0.5)', width: 5 });
+      var strokeBlue = new ol.style.Stroke({ color: 'rgba(0,0,255,0.5)', width: 5 });
+      var strokeBlack = new ol.style.Stroke({ color: 'rgba(0,0,0,0.5)', width: 5 });
+
+      var tempStroke = "";
+
+      if (type == "running") {
+        tempStroke = strokeRed;
+      } else if (type == "cycling") {
+        tempStroke = strokePurple
+      } else if (type == "paddling" || type == "whitewater_rafting_kayaking" || type == "kayaking" || type == "stand_up_paddleboarding") {
+        tempStroke = strokeBlue 
+      } else {
+        tempStroke = strokeBlack
+      }
+
+      var vectorLineLayer = new ol.layer.Vector({
+        source: vectorLine,
+        style: new ol.style.Style({
+          stroke: tempStroke
+        })
+      });
+
+      map.addLayer(vectorLineLayer);
+    }
+
+    function localForageHandler() {
+      //1 get db all key and file list, if file list not exist key, delet key
+      //2 if key exist get item to draw line, else get read file data and setitem and getitem draw line
+      localforage.keys().then(function (keys) {
+        // An array of all the key names.
+
+        //delete key when file is deleted
+        for (var i = 0; i < keys.length; i++) {
+          var file = fileList.find(element => element == keys[i]);
+          if (file == null) {
+            localforage.removeItem(keys[i]).then(function () {
+            }).catch(function (err) {
+              console.log(err);
+            });
+          }
+        }
+
+        //get values form db
+        for (var i = 0; i < fileList.length; i++) {
+          var key = keys.find(element => element == fileList[i]);
+
+          if (key != null) {
+            localforage.getItem(key, function (err, value) {
+              drawLine(value.points, value.type);
+            });
+          } else {
+            //if key not exist, read file 
+            readGPXFileLatLonXMLHttpRequest(fileList[i]);
+          }
+        }
+
+      }).catch(function (err) {
+        console.log(err);
+      });
+    }
+
+  </script>
+
+</body>
+
+</html>
