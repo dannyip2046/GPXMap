@@ -72,7 +72,7 @@
       console.log("data",data);
       console.log("fileList",fileList);
 
-
+      localForageHandler();
     }
 
     function getDirXMLHttpRequestAsync(dir) {
@@ -107,7 +107,7 @@
       localForageHandler();
     }
 
-    function readGPXFileLatLonByGitHubApi(fileName){
+    async function readGPXFileLatLonByGitHubApi(fileName){
       const response = await fetch(gitHubGetRepositoryContentApi + gpxDir + "/" + fileName);
       const data = await response.json();
 
