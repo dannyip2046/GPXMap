@@ -16,6 +16,7 @@
     .map {
       height: 100%;
       width: 100%;
+      font-family: sans-serif;
     }
   </style>
 
@@ -159,6 +160,7 @@
 
     onloadMap();
     //getDirXMLHttpRequestAsync("./data");
+    getCurrentPosition();
 
     function onloadMap() {
       view = new ol.View({
@@ -177,6 +179,21 @@
       });
 
     };
+
+    function getCurrentPosition() {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setMapCeter(position.coords.longitude,position.coords.latitude);
+        setMapZoom(14);
+      });
+    }
+
+    function setMapCeter(longitude,latitude){
+      map.getView().setCenter(ol.proj.fromLonLat([longitude, latitude]));
+    }
+
+    function setMapZoom(zoom){
+      map.getView().setZoom(zoom);
+    }
 
     function getDirXMLHttpRequestAsync(dir) {
       var xhttp = new XMLHttpRequest();
