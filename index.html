@@ -169,13 +169,19 @@
       });
 
       map = new ol.Map({
+        pixelRatio: 1,
         target: 'map',
         layers: [
           new ol.layer.Tile({
+            imageSmoothing: false,
             source: new ol.source.OSM()
           })
         ],
         view: view
+      });
+
+      map.on('moveend', function(e) {
+        map.updateSize();
       });
 
     };
